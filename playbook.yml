@@ -1,0 +1,13 @@
+- name: quizzoto
+  hosts: all
+  roles:
+      - name: quizzoto
+  tags:
+      - quizzoto
+
+- name: traefik
+  hosts: all
+  roles:
+      - name: traefik
+  tags:
+      - traefik

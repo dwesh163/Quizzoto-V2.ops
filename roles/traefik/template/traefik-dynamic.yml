@@ -1,0 +1,31 @@
+http:
+  routers:
+    traefik:
+      rule: "Host(`traefik.quizzoto.fsd.team`)"
+      service: "api@internal"
+      entryPoints:
+        - "websecure"
+      tls:
+        certResolver: letsencrypt
+
+    metrics:
+      rule: "Host(`traefik.quizzoto.fsd.team`) && PathPrefix(`/metrics`)"
+      service: "prometheus@internal"
+      entryPoints:
+        - "websecure"
+      tls:
+        certResolver: letsencrypt
+
+    quizzoto:
+      rule: "Host(`quizzoto.fsd.team`)"
+      service: "quizzotoV2"
+      entryPoints:
+        - "websecure"
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    quizzotoV2:
+      loadBalancer:
+        servers:
+          - url: "http://quizzotoV2:3000"

@@ -1,0 +1,5 @@
+- name: "Setup traefik"
+  import_tasks:
+    file: traefik.yml
+  tags:
+    - traefik

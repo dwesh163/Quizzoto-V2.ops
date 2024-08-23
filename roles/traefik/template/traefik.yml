@@ -1,0 +1,56 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+providers:
+  # Point to the so-called “dynamic” configuration, managed by
+  # Ansible
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+  # Additionally, read Docker container labels as a dynamic configuration source.
+  docker:
+    exposedByDefault: false
+
+{% if traefik_debug %}
+log:
+  level: DEBUG
+{% endif %}
+
+{% if traefik_dashboard %}
+api:
+  dashboard: true
+  insecure: true
+{% endif %}
+
+metrics:
+  prometheus:
+    manualRouting: true # https://docs.traefik.io/observability/metrics/prometheus/#manualrouting
+    entryPoint: websecure
+
+# https://docs.traefik.io/https/acme/
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      # caServer: https://acme-staging-v02.api.letsencrypt.org/directory
+      storage: /acme/acme.json
+      email: idev-fsd@groupes.epfl.ch
+      tlsChallenge: {}
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entrypoint:
+          to: websecure
+          scheme: https
+          permanent: true
+
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+        domains:
+          - main: "fsd.team"

@@ -1,0 +1,3 @@
+traefik_path: "/srv/traefik"
+traefik_debug: false
+traefik_dashboard: true

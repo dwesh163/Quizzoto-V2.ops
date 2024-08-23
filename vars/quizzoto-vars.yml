@@ -1,0 +1,11 @@
+quizzoto_deploy_path: "/srv/quizzotoV2"
+quizzoto_github_repo: "https://github.com/dwesh163/quizzoto-V2.git"
+__quizzoto_secrets: "{{ lookup('file', '/keybase/team/epfl_quizzoto/secrets.yml') | from_yaml }}"
+
+quizzoto_secrets: "{{ __quizzoto_secrets['test'] if ansible_host == 'vmapprentis' else __quizzoto_secrets['prod'] }}"
+
+quizzoto_network_name: "quizzoto_network"
+
+quizzoto_docker_name: "quizzotoV2"
+
+quizzoto_env_keybase: "/keybase/team/epfl_idevfsd/quizzoto/.env"

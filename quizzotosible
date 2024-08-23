@@ -1,0 +1,48 @@
+#!/bin/bash
+#https://github.com/epfl-si/ansible.suitcase
+
+set -e
+cd "$(cd "$(dirname "$0")"; pwd)"
+
+help () {
+    fatal <<HELP_MSG
+Usage:
+
+    ./quizzotosible
+
+  $0 [ -t sometag ] [ ... ]
+HELP_MSG
+}
+
+ensure_suitcase () {
+    if ! test -f ansible-deps-cache/.versions 2>/dev/null; then
+        curl https://raw.githubusercontent.com/epfl-si/ansible.suitcase/master/install.sh | \
+            SUITCASE_DIR=$PWD/ansible-deps-cache \
+            SUITCASE_ANSIBLE_VERSION=9.3.0 \
+            bash -x
+    fi
+    . ansible-deps-cache/lib.sh
+    ensure_ansible_runtime
+}
+
+ensure_suitcase
+
+declare -a ansible_args
+host_limit="vmapprentis"
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --help)
+            help ;;
+        --prod)
+            host_limit="quizzoto-prod"
+            shift ;;
+        --all)
+            host_limit="all"
+            shift ;;
+        *)
+            ansible_args+=("$1")
+            shift ;;
+    esac
+done
+
+ansible-playbook -i inventory.yml playbook.yml --limit "$host_limit" "${ansible_args[@]}" 

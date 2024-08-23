@@ -1,0 +1,7 @@
+{
+	"yaml.schemas": {
+		"https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/ansible.json": "file:///home/duriaux/dev/Quizzoto-V2.ops/roles/traefik/tasks/traefik.yml",
+		"https://raw.githubusercontent.com/ansible/ansible-lint/main/src/ansiblelint/schemas/vars.json": "file:///home/duriaux/dev/Quizzoto-V2.ops/roles/traefik/template/traefik.yml"
+	},
+	"ansible.python.interpreterPath": "/bin/python3.11"
+}

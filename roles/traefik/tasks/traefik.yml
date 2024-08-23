@@ -1,0 +1,42 @@
+---
+# tasks file for idevfsd-traefik
+
+- include_vars: traefik-vars.yml
+- include_vars: quizzoto-vars.yml
+
+- name: Create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "755"
+  with_items:
+    - "{{ traefik_path }}/dynamic"
+    - "{{ traefik_path }}/acme/"
+
+- name: Copy traefik static config
+  template:
+    src: template/traefik.yml
+    dest: "{{ traefik_path }}/traefik.yml"
+  register: _traefik_config
+
+- name: Copy traefik dynamic config
+  template:
+    src: template/traefik-dynamic.yml
+    dest: "{{ traefik_path }}/dynamic/traefik-dynamic.yml"
+
+- name: Run traefik
+  docker_container:
+    name: "traefik"
+    image: "traefik:v3.0"
+    detach: yes
+    restart: "{{ _traefik_config is changed }}"
+    restart_policy: unless-stopped
+    ports:
+      - "80:80" # The HTTP port
+      - "443:443"
+    network_mode: "{{ quizzoto_network_name }}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # So that Traefik can listen to the Docker events
+      - "{{ traefik_path }}/traefik.yml:/traefik.yml"
+      - "{{ traefik_path }}/dynamic:/etc/traefik/dynamic"
+      - "{{ traefik_path }}/acme:/acme"

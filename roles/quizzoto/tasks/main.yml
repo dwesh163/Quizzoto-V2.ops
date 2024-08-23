@@ -1,0 +1,67 @@
+- include_vars: quizzoto-vars.yml
+
+- name: debug
+  ansible.builtin.debug:
+    msg: "npm i && {{ 'npm run dev' if quizzoto_env == 'test' else 'npm run build && npm run start'}}"
+
+- name: "Clone quizzoto repository"
+  ansible.builtin.git:
+    repo: "{{ quizzoto_github_repo }}"
+    dest: "{{ quizzoto_deploy_path }}"
+    force: yes
+
+- name: Change file ownership, group and permissions
+  ansible.builtin.file:
+    path: "{{ quizzoto_deploy_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: "Create docker {{ quizzoto_network_name }} network"
+  ansible.builtin.docker_network:
+    name: "{{ quizzoto_network_name }}"
+
+- name: "Create docker quizzotoDB"
+  ansible.builtin.docker_container:
+    name: "quizzotoDB"
+    image: "mongo:7"
+    state: started
+    ports:
+      - "27017:27017"
+    networks:
+      - name: "{{ quizzoto_network_name }}"
+    env:
+      MONGO_INITDB_DATABASE: "{{ quizzoto_secrets.mongo.dbname }}"
+      MONGO_INITDB_ROOT_USERNAME: "{{ quizzoto_secrets.mongo.root.username }}"
+      MONGO_INITDB_ROOT_PASSWORD: "{{ quizzoto_secrets.mongo.root.password }}"
+      MONGO_INITDB_USER_USERNAME: "{{ quizzoto_secrets.mongo.user.username }}"
+      MONGO_INITDB_USER_PASSWORD: "{{ quizzoto_secrets.mongo.user.password }}"
+    volumes:
+      - "{{ quizzoto_deploy_path }}/data/mongo:/data/db"
+      - "{{ quizzoto_deploy_path }}/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro"
+
+- name: "Create docker {{ quizzoto_docker_name }}"
+  ansible.builtin.docker_container:
+    name: "{{ quizzoto_docker_name }}"
+    image: "node:20-slim"
+    command: "/bin/sh -c 'cd /quizzoto && npm install && {{ 'npm run dev' if quizzoto_env == 'test' else 'npm run build && npm run start'}}'"
+    state: started
+    # ports:
+    #   - "{{ quizzoto_ext_port }}:{{ quizzoto_int_port }}"
+    expose:
+      - "{{ quizzoto_int_port }}"
+    networks:
+      - name: "{{ quizzoto_network_name }}"
+    env:
+      MONGO_INITDB_DATABASE: "quizzoto"
+      MONGO_INITDB_URL: "{{ quizzoto_secrets.mongo.url }}"
+      MONGO_INITDB_USER_USERNAME: "{{ quizzoto_secrets.mongo.user.username }}"
+      MONGO_INITDB_USER_PASSWORD: "{{ quizzoto_secrets.mongo.user.password }}"
+      GITHUB_ID: "{{ quizzoto_secrets.auth.providers.GitHub.id }}"
+      GITHUB_SECRET: "{{ quizzoto_secrets.auth.providers.GitHub.secret }}"
+      NEXTAUTH_URL: "{{ quizzoto_secrets.auth.url }}"
+      NEXTAUTH_SECRET: "{{ lookup('community.general.random_string', length=64, base64=True) }}"
+      AUTH_SECRET: "{{ lookup('community.general.random_string', length=64, base64=True) }}"
+      QUIZZOTO_PORT: "{{ quizzoto_int_port }}"
+    volumes:
+      - "{{ quizzoto_deploy_path }}:/quizzoto"
